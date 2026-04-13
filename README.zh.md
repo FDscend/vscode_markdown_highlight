@@ -21,7 +21,7 @@
 
 基本: `==这是高亮==`
 
-嵌套: `==**粗体高亮**==`
+嵌套: `==**粗体高亮**==` 或者 `**==粗体高亮==**`
 
 ### 快捷键
 
@@ -34,3 +34,8 @@
 ### 右键菜单
 
 - 右键选择 "高亮选中文本" 包装选中文本
+
+## 安装方法
+
+- 你可以从 [Visual Studio Code Marketplace](https://marketplace.visualstudio.com/items?itemName=FDscend.markdown-highlight-mark) 安装此扩展，或者在 VS Code 的扩展视图中搜索 "markdown highlight mark"。
+- 另外，你也可以从 GitHub 的 [Releases](https://github.com/FDscend/vscode_markdown_highlight/releases/latest) 页面下载此扩展。

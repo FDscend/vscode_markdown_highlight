@@ -21,7 +21,7 @@ Support for highlight syntax `==...==` in Markdown previews, including Jupyter N
 
 Basic: `==this is highlighted==`
 
-Nested: `==**bold highlighted**==`
+Nested: `==**bold highlighted**==` or `**==bold highlighted==**`
 
 ### Keybinding
 
@@ -34,3 +34,8 @@ Nested: `==**bold highlighted**==`
 ### Context menu
 
 - Use the editor context menu item "Wrap Selection with Highlight" to wrap selected text.
+
+## Installation
+
+- You can install the extension from the [Visual Studio Code Marketplace](https://marketplace.visualstudio.com/items?itemName=FDscend.markdown-highlight-mark) or by searching for "markdown highlight mark" in the Extensions view in VS Code.
+- Alternatively, you can download the extension from the [Releases](https://github.com/FDscend/vscode_markdown_highlight/releases/latest) page on GitHub.

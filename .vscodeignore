@@ -11,3 +11,7 @@ vsc-extension-quickstart.md
 **/*.map
 **/*.ts
 **/.vscode-test.*
+.reference/
+example/
+tsup.notebook.config.js
+note*.md
