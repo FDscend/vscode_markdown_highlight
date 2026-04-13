@@ -1,22 +1,23 @@
 # markdown-highlight-mark
 
-- 中文版参见：[README.zh.md](README.zh.md)
+| [English version](https://github.com/FDscend/vscode_markdown_highlight/blob/main/README.md) | [中文版本](https://github.com/FDscend/vscode_markdown_highlight/blob/main/README.zh.md) |
+| ------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
 
 Support for highlight syntax `==...==` in Markdown previews, including Jupyter Notebook previews.
 
 ## Demo
 
-![](example/test_md.png)
+![](https://raw.githubusercontent.com/FDscend/vscode_markdown_highlight/refs/heads/main/example/test_md.png)
 
-![](example/test_ipynb.png)
+![](https://raw.githubusercontent.com/FDscend/vscode_markdown_highlight/refs/heads/main/example/test_ipynb.png)
 
 ## Usage
 
 ### Basic
 
-Basic: ==this is highlighted==
+Basic: `==this is highlighted==`
 
-Nested: ==**bold highlighted**==
+Nested: `==**bold highlighted**==`
 
 ### Keybinding
 

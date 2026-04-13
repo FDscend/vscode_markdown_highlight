@@ -1,20 +1,23 @@
 # markdown-highlight-mark
 
+| [English version](https://github.com/FDscend/vscode_markdown_highlight/blob/main/README.md) | [中文版本](https://github.com/FDscend/vscode_markdown_highlight/blob/main/README.zh.md) |
+| ------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+
 为 Obsidian 的高亮语法 `==...==` 提供支持，包括 markdown 文件和 Jupyter Notebook 的预览。
 
 ## 效果展示
 
-![](example/test_md.png)
+![](https://raw.githubusercontent.com/FDscend/vscode_markdown_highlight/refs/heads/main/example/test_md.png)
 
-![](example/test_ipynb.png)
+![](https://raw.githubusercontent.com/FDscend/vscode_markdown_highlight/refs/heads/main/example/test_ipynb.png)
 
 ## 使用方法
 
 ### 基本使用
 
-基本: ==这是高亮==
+基本: `==这是高亮==`
 
-嵌套: ==**粗体高亮**==
+嵌套: `==**粗体高亮**==`
 
 ### 快捷键
 
