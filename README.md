@@ -7,9 +7,15 @@ Support for highlight syntax `==...==` in Markdown previews, including Jupyter N
 
 ## Demo
 
-![](https://raw.githubusercontent.com/FDscend/vscode_markdown_highlight/refs/heads/main/example/test_md.png)
+<figure>
+  <img src="https://raw.githubusercontent.com/FDscend/vscode_markdown_highlight/refs/heads/main/example/test_md.png" alt="Markdown preview example">
+  <figcaption align="center">Markdown preview example</figcaption>
+</figure>
 
-![](https://raw.githubusercontent.com/FDscend/vscode_markdown_highlight/refs/heads/main/example/test_ipynb.png)
+<figure>
+  <img src="https://raw.githubusercontent.com/FDscend/vscode_markdown_highlight/refs/heads/main/example/test_ipynb.png" alt="Jupyter Notebook preview example">
+  <figcaption align="center">Jupyter Notebook preview example</figcaption>
+</figure>
 
 ## Usage
 
