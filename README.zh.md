@@ -7,15 +7,13 @@
 
 ## 效果展示
 
-<figure>
-  <img src="https://raw.githubusercontent.com/FDscend/vscode_markdown_highlight/refs/heads/main/example/test_md.png" alt="Markdown 预览效果示例">
-  <figcaption align="center">Markdown 预览效果示例</figcaption>
-</figure>
+![](https://raw.githubusercontent.com/FDscend/vscode_markdown_highlight/refs/heads/main/example/test_md.png)
 
-<figure>
-  <img src="https://raw.githubusercontent.com/FDscend/vscode_markdown_highlight/refs/heads/main/example/test_ipynb.png" alt="Jupyter Notebook 预览效果示例">
-  <figcaption align="center">Jupyter Notebook 预览效果示例</figcaption>
-</figure>
+<p align="center">Markdown 预览效果示例</p>
+
+![](https://raw.githubusercontent.com/FDscend/vscode_markdown_highlight/refs/heads/main/example/test_ipynb.png)
+
+<p align="center">Jupyter Notebook 预览效果示例</p>
 
 ## 使用方法
 
