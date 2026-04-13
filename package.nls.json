@@ -1,0 +1,4 @@
+{
+  "command.wrap": "Wrap Selection with Highlight (==...==)",
+  "command.insert": "Insert Highlight or Wrap Selection (Ctrl+Shift+=)"
+}

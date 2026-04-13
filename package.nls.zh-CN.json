@@ -1,0 +1,5 @@
+{
+  "command.wrap": "高亮选中文本",
+  "command.insert": "插入高亮或包装选中文本 (Ctrl+Shift=)",
+  "Markdown": "Markdown"
+}

@@ -1,0 +1,107 @@
+{
+  "name": "markdown-highlight-mark",
+  "displayName": "markdown-highlight-mark",
+  "description": "Highlight markdown ==...== text",
+  "version": "0.0.2",
+  "publisher": "FDscend",
+  "license": "MIT",
+  "icon": "./icon.png",
+  "engines": {
+    "vscode": "^1.105.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onLanguage:markdown",
+    "onNotebook:jupyter-notebook"
+  ],
+  "main": "./out/extension.js",
+  "repository": "https://github.com/FDscend/vscode_markdown_highlight",
+  "contributes": {
+    "notebookRenderer": [
+      {
+        "id": "fdscend.markdown-it-highlight-extension",
+        "displayName": "Markdown Highlight renderer",
+        "entrypoint": {
+          "extends": "vscode.markdown-it-renderer",
+          "path": "./dist/notebook.mjs"
+        }
+      }
+    ],
+    "markdown.markdownItPlugins": true,
+    "markdown.previewStyles": [
+      "./media/highlight.css"
+    ],
+    "commands": [
+      {
+        "command": "markdown-highlight.wrapWithHighlight",
+        "title": "%command.wrap%",
+        "category": "Markdown"
+      },
+      {
+        "command": "markdown-highlight.insertEqualsSign",
+        "title": "%command.insert%",
+        "category": "Markdown"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "markdown-highlight.insertEqualsSign",
+        "key": "ctrl+shift+=",
+        "when": "editorTextFocus && (editorLangId == markdown || notebookCellType == markdown)"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "markdown-highlight.wrapWithHighlight",
+          "when": "editorLangId == markdown || notebookCellType == markdown",
+          "group": "1_modification"
+        }
+      ]
+    },
+    "grammars": [
+      {
+        "scopeName": "markdown.highlight.injection",
+        "path": "./syntaxes/highlight.json",
+        "injectTo": [
+          "text.html.markdown"
+        ],
+        "embeddedLanguages": {
+          "meta.embedded.block.markdown": "markdown"
+        }
+      }
+    ],
+    "snippets": [
+      {
+        "language": "markdown",
+        "path": "./snippets/highlight.json"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./ && tsup --config tsup.notebook.config.ts",
+    "watch": "tsup --config tsup.notebook.config.ts && tsc -watch -p ./",
+    "lint": "eslint src"
+  },
+  "devDependencies": {
+    "@types/markdown-it": "^14.1.2",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "22.x",
+    "@types/vscode": "^1.105.0",
+    "@types/vscode-notebook-renderer": "^1.72.4",
+    "@typescript-eslint/eslint-plugin": "^8.42.0",
+    "@typescript-eslint/parser": "^8.42.0",
+    "@vscode/test-cli": "^0.0.11",
+    "@vscode/test-electron": "^2.5.2",
+    "eslint": "^9.34.0",
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.2"
+  },
+  "dependencies": {
+    "markdown-it": "^14.1.0",
+    "marked": "^16.4.1"
+  }
+}

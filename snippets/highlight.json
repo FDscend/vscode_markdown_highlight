@@ -1,0 +1,7 @@
+{
+  "Highlight Text": {
+    "prefix": "highlight",
+    "body": "==${1:text}==",
+    "description": "Insert highlighted text with ==mark=="
+  }
+}

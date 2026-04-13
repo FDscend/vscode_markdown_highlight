@@ -1,0 +1,18 @@
+{
+  "scopeName": "markdown.highlight",
+  "injectionSelector": "L:markdown",
+  "patterns": [
+    {
+      "name": "markup.highlight.markdown",
+      "match": "==([^=]+)==",
+      "captures": {
+        "0": {
+          "name": "markup.highlight.markdown"
+        },
+        "1": {
+          "name": "markup.highlight.content.markdown"
+        }
+      }
+    }
+  ]
+}
