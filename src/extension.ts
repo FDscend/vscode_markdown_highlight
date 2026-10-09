@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 import MarkdownIt from "markdown-it";
-import { highlightPlugin, defaultColor, defaultRadius } from "./highlight-plugin";
+import { highlightPlugin, defaultColor, defaultRadius, colorMarkers, highlightColors } from "./highlight-plugin";
 
 // 标记高亮文本装饰器
 const highlightDecorationType = vscode.window.createTextEditorDecorationType({
@@ -8,9 +8,19 @@ const highlightDecorationType = vscode.window.createTextEditorDecorationType({
   borderRadius: defaultRadius,
 });
 
+// 带颜色标记的高亮装饰器（每种颜色一个）
+const highlightDecorationTypes: Record<string, vscode.TextEditorDecorationType> = {};
+for (const [name, color] of Object.entries(highlightColors)) {
+  highlightDecorationTypes[name] = vscode.window.createTextEditorDecorationType({
+    backgroundColor: color,
+    borderRadius: defaultRadius,
+  });
+}
+
 // 改进的正则表达式，不匹配包含 | 的内容（避免表格错误匹配）
 // 并且不允许跨越换行符
-const HIGHLIGHT_REGEX = /==([^=\n\r|]+)==/g;
+// 捕获组 1 为紧跟在 == 之后的颜色表情（可选），组 2 为高亮内容
+const HIGHLIGHT_REGEX = /==([🔴🟠🟡🟢🔵🟣]\uFE0F?)?([^=\n\r|]+)==/gu;
 
 export function activate(context: vscode.ExtensionContext) {
   console.log("Markdown highlight extension is now active!");
@@ -119,6 +129,10 @@ export function activate(context: vscode.ExtensionContext) {
     const codeBlockRanges = getCodeBlockRanges(text, editor.document);
     const inlineCodeRanges = getInlineCodeRanges(text, editor.document, codeBlockRanges);
     const highlights: vscode.DecorationOptions[] = [];
+    const coloredHighlights: Record<string, vscode.DecorationOptions[]> = {};
+    for (const name of Object.keys(highlightColors)) {
+      coloredHighlights[name] = [];
+    }
     let match;
 
     // 重置全局正则的 lastIndex，避免状态污染
@@ -152,11 +166,21 @@ export function activate(context: vscode.ExtensionContext) {
         const decoration = {
           range: new vscode.Range(startPos, endPos),
         };
-        highlights.push(decoration);
+        // 捕获组 1 是颜色表情（可能带变体选择符），只有紧跟 == 时才作为颜色标记
+        const emoji = match[1] ? [...match[1]][0] : undefined;
+        const colorName = emoji ? colorMarkers[emoji] : undefined;
+        if (colorName) {
+          coloredHighlights[colorName].push(decoration);
+        } else {
+          highlights.push(decoration);
+        }
       }
     }
 
     editor.setDecorations(highlightDecorationType, highlights);
+    for (const [name, decorationType] of Object.entries(highlightDecorationTypes)) {
+      editor.setDecorations(decorationType, coloredHighlights[name]);
+    }
   }
 
   // 初始更新
@@ -254,4 +278,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 export function deactivate() {
   highlightDecorationType.dispose();
+  for (const decorationType of Object.values(highlightDecorationTypes)) {
+    decorationType.dispose();
+  }
 }

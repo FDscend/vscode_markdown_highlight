@@ -6,3 +6,27 @@ mark {
   border-radius: 5px;
   padding: 0px 4px;
 }
+
+mark[data-highlight="red"] {
+  background-color: color-mix(in oklch, rgb(221, 44, 56) 30%, transparent);
+}
+
+mark[data-highlight="orange"] {
+  background-color: color-mix(in oklch, rgb(222, 116, 23) 30%, transparent);
+}
+
+mark[data-highlight="yellow"] {
+  background-color: color-mix(in oklch, rgb(192, 156, 12) 30%, transparent);
+}
+
+mark[data-highlight="green"] {
+  background-color: color-mix(in oklch, rgb(29, 165, 29) 30%, transparent);
+}
+
+mark[data-highlight="blue"] {
+  background-color: color-mix(in oklch, rgb(23, 117, 217) 30%, transparent);
+}
+
+mark[data-highlight="purple"] {
+  background-color: color-mix(in oklch, rgb(143, 71, 225) 30%, transparent);
+}
