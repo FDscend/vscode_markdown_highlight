@@ -1,0 +1,15 @@
+{
+  "Red": "红色",
+  "Orange": "橙色",
+  "Yellow": "黄色",
+  "Green": "绿色",
+  "Blue": "蓝色",
+  "Purple": "紫色",
+  "Default Color": "默认颜色",
+  "Current": "当前",
+  "Highlight Color": "高亮颜色",
+  "Pick a color for the markdown highlight at the cursor": "为光标处的高亮选择颜色",
+  "Change highlight color...": "修改高亮颜色...",
+  "Use default color": "改用默认颜色",
+  "Remove Highlight": "移除高亮"
+}

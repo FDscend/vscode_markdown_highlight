@@ -1,4 +1,12 @@
 {
-  "command.wrap": "Wrap Selection with Highlight (==...==)",
-  "command.insert": "Insert Highlight or Wrap Selection (Ctrl+Shift+=)"
+  "command.pickColor": "Choose Highlight Color...",
+  "command.colorDefault": "Default Color",
+  "command.colorRed": "🔴 Red",
+  "command.colorOrange": "🟠 Orange",
+  "command.colorYellow": "🟡 Yellow",
+  "command.colorGreen": "🟢 Green",
+  "command.colorBlue": "🔵 Blue",
+  "command.colorPurple": "🟣 Purple",
+  "command.removeHighlight": "Remove Highlight",
+  "submenu.highlightSelection": "Highlight Selected Text"
 }

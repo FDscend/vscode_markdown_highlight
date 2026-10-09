@@ -1,5 +1,13 @@
 {
-  "command.wrap": "高亮选中文本",
-  "command.insert": "插入高亮或包装选中文本 (Ctrl+Shift=)",
+  "command.pickColor": "选择高亮颜色...",
+  "command.colorDefault": "默认颜色",
+  "command.colorRed": "🔴红色",
+  "command.colorOrange": "🟠橙色",
+  "command.colorYellow": "🟡黄色",
+  "command.colorGreen": "🟢绿色",
+  "command.colorBlue": "🔵蓝色",
+  "command.colorPurple": "🟣紫色",
+  "command.removeHighlight": "移除高亮",
+  "submenu.highlightSelection": "高亮选中文本",
   "Markdown": "Markdown"
 }

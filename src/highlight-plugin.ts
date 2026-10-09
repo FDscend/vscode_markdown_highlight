@@ -5,18 +5,28 @@ export const defaultRadius = "5px";
 
 const VARIATION_SELECTOR = "\uFE0F";
 
+/** 调色板：顺序即菜单与选色器中的展示顺序 */
+export const highlightPalette: ReadonlyArray<{ name: string; emoji: string }> = [
+  { name: "red", emoji: "🔴" },
+  { name: "orange", emoji: "🟠" },
+  { name: "yellow", emoji: "🟡" },
+  { name: "green", emoji: "🟢" },
+  { name: "blue", emoji: "🔵" },
+  { name: "purple", emoji: "🟣" },
+];
+
 /**
  * 颜色标记：必须紧跟在起始 == 之后的表情，只用于指定颜色，本身不渲染（键为表情，值为颜色名）。
  * 出现在其他位置的表情（例如 ==text🔴==）按普通文本渲染。
  */
-export const colorMarkers: Record<string, string> = {
-  "🔴": "red",
-  "🟠": "orange",
-  "🟡": "yellow",
-  "🟢": "green",
-  "🔵": "blue",
-  "🟣": "purple",
-};
+export const colorMarkers: Record<string, string> = Object.fromEntries(
+  highlightPalette.map((marker) => [marker.emoji, marker.name])
+);
+
+/** 颜色名 → 颜色标记表情（default 或未知颜色返回空串） */
+export function colorEmoji(colorName: string | null): string {
+  return highlightPalette.find((marker) => marker.name === colorName)?.emoji ?? "";
+}
 
 /** 颜色名 → 高亮背景色 */
 export const highlightColors: Record<string, string> = {

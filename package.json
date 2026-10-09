@@ -17,6 +17,7 @@
     "onNotebook:jupyter-notebook"
   ],
   "main": "./out/extension.js",
+  "l10n": "./l10n",
   "repository": "https://github.com/FDscend/vscode_markdown_highlight",
   "contributes": {
     "notebookRenderer": [
@@ -35,19 +36,69 @@
     ],
     "commands": [
       {
-        "command": "markdown-highlight.wrapWithHighlight",
-        "title": "%command.wrap%",
-        "category": "Markdown"
+        "command": "markdown-highlight.pickColor",
+        "title": "%command.pickColor%",
+        "category": "Markdown",
+        "enablement": "editorLangId == markdown || notebookCellType == markdown"
       },
       {
-        "command": "markdown-highlight.insertEqualsSign",
-        "title": "%command.insert%",
-        "category": "Markdown"
+        "command": "markdown-highlight.setColorDefault",
+        "title": "%command.colorDefault%",
+        "category": "Markdown",
+        "enablement": "editorLangId == markdown || notebookCellType == markdown"
+      },
+      {
+        "command": "markdown-highlight.setColorRed",
+        "title": "%command.colorRed%",
+        "category": "Markdown",
+        "enablement": "editorLangId == markdown || notebookCellType == markdown"
+      },
+      {
+        "command": "markdown-highlight.setColorOrange",
+        "title": "%command.colorOrange%",
+        "category": "Markdown",
+        "enablement": "editorLangId == markdown || notebookCellType == markdown"
+      },
+      {
+        "command": "markdown-highlight.setColorYellow",
+        "title": "%command.colorYellow%",
+        "category": "Markdown",
+        "enablement": "editorLangId == markdown || notebookCellType == markdown"
+      },
+      {
+        "command": "markdown-highlight.setColorGreen",
+        "title": "%command.colorGreen%",
+        "category": "Markdown",
+        "enablement": "editorLangId == markdown || notebookCellType == markdown"
+      },
+      {
+        "command": "markdown-highlight.setColorBlue",
+        "title": "%command.colorBlue%",
+        "category": "Markdown",
+        "enablement": "editorLangId == markdown || notebookCellType == markdown"
+      },
+      {
+        "command": "markdown-highlight.setColorPurple",
+        "title": "%command.colorPurple%",
+        "category": "Markdown",
+        "enablement": "editorLangId == markdown || notebookCellType == markdown"
+      },
+      {
+        "command": "markdown-highlight.removeHighlight",
+        "title": "%command.removeHighlight%",
+        "category": "Markdown",
+        "enablement": "editorLangId == markdown || notebookCellType == markdown"
+      }
+    ],
+    "submenus": [
+      {
+        "id": "markdown-highlight.colorSubmenu",
+        "label": "%submenu.highlightSelection%"
       }
     ],
     "keybindings": [
       {
-        "command": "markdown-highlight.insertEqualsSign",
+        "command": "markdown-highlight.setColorDefault",
         "key": "ctrl+shift+=",
         "when": "editorTextFocus && (editorLangId == markdown || notebookCellType == markdown)"
       }
@@ -55,9 +106,81 @@
     "menus": {
       "editor/context": [
         {
-          "command": "markdown-highlight.wrapWithHighlight",
+          "submenu": "markdown-highlight.colorSubmenu",
           "when": "editorLangId == markdown || notebookCellType == markdown",
           "group": "1_modification"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "markdown-highlight.pickColor",
+          "when": "false"
+        },
+        {
+          "command": "markdown-highlight.setColorDefault",
+          "when": "false"
+        },
+        {
+          "command": "markdown-highlight.setColorRed",
+          "when": "false"
+        },
+        {
+          "command": "markdown-highlight.setColorOrange",
+          "when": "false"
+        },
+        {
+          "command": "markdown-highlight.setColorYellow",
+          "when": "false"
+        },
+        {
+          "command": "markdown-highlight.setColorGreen",
+          "when": "false"
+        },
+        {
+          "command": "markdown-highlight.setColorBlue",
+          "when": "false"
+        },
+        {
+          "command": "markdown-highlight.setColorPurple",
+          "when": "false"
+        },
+        {
+          "command": "markdown-highlight.removeHighlight",
+          "when": "false"
+        }
+      ],
+      "markdown-highlight.colorSubmenu": [
+        {
+          "command": "markdown-highlight.setColorDefault",
+          "group": "1_color@1"
+        },
+        {
+          "command": "markdown-highlight.setColorRed",
+          "group": "1_color@2"
+        },
+        {
+          "command": "markdown-highlight.setColorOrange",
+          "group": "1_color@3"
+        },
+        {
+          "command": "markdown-highlight.setColorYellow",
+          "group": "1_color@4"
+        },
+        {
+          "command": "markdown-highlight.setColorGreen",
+          "group": "1_color@5"
+        },
+        {
+          "command": "markdown-highlight.setColorBlue",
+          "group": "1_color@6"
+        },
+        {
+          "command": "markdown-highlight.setColorPurple",
+          "group": "1_color@7"
+        },
+        {
+          "command": "markdown-highlight.removeHighlight",
+          "group": "2_remove@1"
         }
       ]
     },

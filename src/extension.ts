@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
 import MarkdownIt from "markdown-it";
-import { highlightPlugin, defaultColor, defaultRadius, colorMarkers, highlightColors } from "./highlight-plugin";
+import { highlightPlugin, defaultColor, defaultRadius, colorMarkers, colorEmoji, highlightColors, highlightPalette } from "./highlight-plugin";
+import { computeColorEdits, computeRemoveEdits, type ColorEdit, type HighlightSpan } from "./color-edits";
 
 // 标记高亮文本装饰器
 const highlightDecorationType = vscode.window.createTextEditorDecorationType({
@@ -21,6 +22,17 @@ for (const [name, color] of Object.entries(highlightColors)) {
 // 并且不允许跨越换行符
 // 捕获组 1 为紧跟在 == 之后的颜色表情（可选），组 2 为高亮内容
 const HIGHLIGHT_REGEX = /==([🔴🟠🟡🟢🔵🟣]\uFE0F?)?([^=\n\r|]+)==/gu;
+
+// 颜色命令：菜单、命令面板共用；快捷键不设默认绑定，留待用户自行绑定
+const colorCommands: Record<string, string | null> = {
+  'markdown-highlight.setColorDefault': null,
+  'markdown-highlight.setColorRed': 'red',
+  'markdown-highlight.setColorOrange': 'orange',
+  'markdown-highlight.setColorYellow': 'yellow',
+  'markdown-highlight.setColorGreen': 'green',
+  'markdown-highlight.setColorBlue': 'blue',
+  'markdown-highlight.setColorPurple': 'purple',
+};
 
 export function activate(context: vscode.ExtensionContext) {
   console.log("Markdown highlight extension is now active!");
@@ -109,6 +121,56 @@ export function activate(context: vscode.ExtensionContext) {
     return { inCodeBlock: false, language: '', type: '' };
   }
 
+  // 收集文档中所有 ==...== 区间（与预览插件同一套规则，忽略代码块与行内代码）
+  function collectHighlightSpans(document: vscode.TextDocument, text: string): HighlightSpan[] {
+    const codeBlockRanges = getCodeBlockRanges(text, document);
+    const inlineCodeRanges = getInlineCodeRanges(text, document, codeBlockRanges);
+    const spans: HighlightSpan[] = [];
+
+    // 重置全局正则的 lastIndex，避免状态污染
+    HIGHLIGHT_REGEX.lastIndex = 0;
+
+    let match;
+    while ((match = HIGHLIGHT_REGEX.exec(text))) {
+      const start = match.index;
+      const end = start + match[0].length;
+
+      // 检查是否在行内代码中
+      if (isInInlineCode(start, inlineCodeRanges) || isInInlineCode(end - 1, inlineCodeRanges)) {
+        continue;
+      }
+
+      // 检查匹配的开始和结束位置是否都不在代码块中
+      const startBlockInfo = isInCodeBlock(start, codeBlockRanges);
+      const endBlockInfo = isInCodeBlock(end - 1, codeBlockRanges);
+
+      // 只有当两个标记都不在代码块中时，才高亮
+      // 或者都在 markdown 代码块中时，才高亮
+      let shouldHighlight = !startBlockInfo.inCodeBlock && !endBlockInfo.inCodeBlock;
+      if (startBlockInfo.inCodeBlock && endBlockInfo.inCodeBlock &&
+          startBlockInfo.type === endBlockInfo.type &&
+          startBlockInfo.language === endBlockInfo.language) {
+        shouldHighlight = startBlockInfo.type === 'fence' && startBlockInfo.language === 'markdown';
+      }
+      if (!shouldHighlight) {
+        continue;
+      }
+
+      // 捕获组 1 是颜色表情（可能带变体选择符），只有紧跟 == 时才作为颜色标记
+      const marker = match[1];
+      const emoji = marker ? [...marker][0] : undefined;
+      spans.push({
+        start,
+        end,
+        contentStart: start + 2 + (marker?.length ?? 0),
+        contentEnd: end - 2,
+        color: emoji ? colorMarkers[emoji] ?? null : null,
+      });
+    }
+
+    return spans;
+  }
+
   // 更新编辑器高亮
   function updateDecorations() {
     const editor = vscode.window.activeTextEditor;
@@ -125,55 +187,20 @@ export function activate(context: vscode.ExtensionContext) {
       return;
     }
 
-    const text = editor.document.getText();
-    const codeBlockRanges = getCodeBlockRanges(text, editor.document);
-    const inlineCodeRanges = getInlineCodeRanges(text, editor.document, codeBlockRanges);
     const highlights: vscode.DecorationOptions[] = [];
     const coloredHighlights: Record<string, vscode.DecorationOptions[]> = {};
     for (const name of Object.keys(highlightColors)) {
       coloredHighlights[name] = [];
     }
-    let match;
 
-    // 重置全局正则的 lastIndex，避免状态污染
-    HIGHLIGHT_REGEX.lastIndex = 0;
-    
-    while ((match = HIGHLIGHT_REGEX.exec(text))) {
-      const matchStart = match.index;
-      const matchEnd = match.index + match[0].length;
-      
-      // 检查是否在行内代码中
-      if (isInInlineCode(matchStart, inlineCodeRanges) || isInInlineCode(matchEnd - 1, inlineCodeRanges)) {
-        continue;
-      }
-      
-      // 检查匹配的开始和结束位置是否都不在代码块中
-      const startBlockInfo = isInCodeBlock(matchStart, codeBlockRanges);
-      const endBlockInfo = isInCodeBlock(matchEnd - 1, codeBlockRanges);
-
-      // 只有当两个标记都不在代码块中时，才高亮
-      // 或者都在 markdown 代码块中时，才高亮
-      let shouldHighlight = !startBlockInfo.inCodeBlock && !endBlockInfo.inCodeBlock;
-      if (startBlockInfo.inCodeBlock && endBlockInfo.inCodeBlock && 
-          startBlockInfo.type === endBlockInfo.type && 
-          startBlockInfo.language === endBlockInfo.language) {
-        shouldHighlight = startBlockInfo.type === 'fence' && startBlockInfo.language === 'markdown';
-      }
-
-      if (shouldHighlight) {
-        const startPos = editor.document.positionAt(matchStart);
-        const endPos = editor.document.positionAt(matchEnd);
-        const decoration = {
-          range: new vscode.Range(startPos, endPos),
-        };
-        // 捕获组 1 是颜色表情（可能带变体选择符），只有紧跟 == 时才作为颜色标记
-        const emoji = match[1] ? [...match[1]][0] : undefined;
-        const colorName = emoji ? colorMarkers[emoji] : undefined;
-        if (colorName) {
-          coloredHighlights[colorName].push(decoration);
-        } else {
-          highlights.push(decoration);
-        }
+    for (const span of collectHighlightSpans(editor.document, editor.document.getText())) {
+      const decoration = {
+        range: new vscode.Range(editor.document.positionAt(span.start), editor.document.positionAt(span.end)),
+      };
+      if (span.color && coloredHighlights[span.color]) {
+        coloredHighlights[span.color].push(decoration);
+      } else {
+        highlights.push(decoration);
       }
     }
 
@@ -183,58 +210,174 @@ export function activate(context: vscode.ExtensionContext) {
     }
   }
 
+  // 编辑器文本适配与编辑应用（供纯函数使用）
+  function getEditorAdapter(document: vscode.TextDocument) {
+    return {
+      text: document.getText(),
+      lineStartOffset: (line: number) => document.offsetAt(new vscode.Position(line, 0)),
+      lineEndOffset: (line: number) => document.offsetAt(document.lineAt(line).range.end),
+      lineOfOffset: (offset: number) => document.positionAt(offset).line,
+    };
+  }
+
+  function getSelectionOffsets(editor: vscode.TextEditor) {
+    return editor.selections.map((selection) => ({
+      start: editor.document.offsetAt(selection.start),
+      end: editor.document.offsetAt(selection.end),
+    }));
+  }
+
+  async function applyEdits(editor: vscode.TextEditor, edits: ColorEdit[]) {
+    if (edits.length === 0) {
+      return;
+    }
+
+    const document = editor.document;
+    const applied = await editor.edit((editBuilder) => {
+      for (const edit of edits) {
+        const range = new vscode.Range(document.positionAt(edit.startOffset), document.positionAt(edit.startOffset + edit.oldLength));
+        editBuilder.replace(range, edit.newText);
+      }
+    });
+    if (!applied) {
+      return;
+    }
+
+    // 编辑后偏移会变化，按顺序累计前面的增量，把锚点映射回新文档
+    let shift = 0;
+    const updatedSelections: vscode.Selection[] = [];
+    for (const edit of edits) {
+      const newStart = edit.startOffset + shift;
+      shift += edit.newText.length - edit.oldLength;
+      const anchorStart = document.positionAt(newStart + edit.anchorStart);
+      const anchorEnd = document.positionAt(newStart + edit.anchorEnd);
+      updatedSelections.push(new vscode.Selection(anchorStart, anchorEnd));
+    }
+    editor.selections = updatedSelections;
+  }
+
+  // 把颜色应用到当前所有选区/光标处的高亮；colorName 为 null 表示默认颜色（不写颜色标记，仍是默认高亮色）
+  async function applyHighlightColor(colorName: string | null) {
+    const editor = vscode.window.activeTextEditor;
+    if (!editor || editor.document.languageId !== "markdown") {
+      return;
+    }
+
+    const adapter = getEditorAdapter(editor.document);
+    const edits = computeColorEdits(
+      adapter,
+      collectHighlightSpans(editor.document, adapter.text),
+      getSelectionOffsets(editor),
+      colorEmoji(colorName)
+    );
+    await applyEdits(editor, edits);
+  }
+
+  // 移除选区/光标处高亮的 == 标记（连同颜色标记），保留文字
+  async function removeHighlight() {
+    const editor = vscode.window.activeTextEditor;
+    if (!editor || editor.document.languageId !== "markdown") {
+      return;
+    }
+
+    const adapter = getEditorAdapter(editor.document);
+    const edits = computeRemoveEdits(
+      adapter,
+      collectHighlightSpans(editor.document, adapter.text),
+      getSelectionOffsets(editor)
+    );
+    await applyEdits(editor, edits);
+  }
+
+  // 选择颜色（命令面板 / 代码操作共用）：列出 7 种配色
+  async function pickHighlightColor() {
+    const editor = vscode.window.activeTextEditor;
+    if (!editor || editor.document.languageId !== "markdown") {
+      return;
+    }
+
+    const cursor = editor.document.offsetAt(editor.selection.active);
+    const current = collectHighlightSpans(editor.document, editor.document.getText())
+      .find((span) => cursor >= span.start && cursor <= span.end);
+
+    const colorLabels: Record<string, string> = {
+      red: vscode.l10n.t("Red"),
+      orange: vscode.l10n.t("Orange"),
+      yellow: vscode.l10n.t("Yellow"),
+      green: vscode.l10n.t("Green"),
+      blue: vscode.l10n.t("Blue"),
+      purple: vscode.l10n.t("Purple"),
+    };
+    const items: Array<vscode.QuickPickItem & { colorName: string | null }> = [
+      {
+        label: `$(circle-filled) ${vscode.l10n.t("Default Color")}`,
+        description: current && !current.color ? vscode.l10n.t("Current") : undefined,
+        colorName: null,
+      },
+      ...highlightPalette.map(({ name, emoji }) => ({
+        label: `${emoji} ${colorLabels[name]}`,
+        description: current?.color === name ? vscode.l10n.t("Current") : undefined,
+        colorName: name,
+      })),
+    ];
+
+    const picked = await vscode.window.showQuickPick(items, {
+      title: vscode.l10n.t("Highlight Color"),
+      placeHolder: vscode.l10n.t("Pick a color for the markdown highlight at the cursor"),
+    });
+    if (picked) {
+      await applyHighlightColor(picked.colorName);
+    }
+  }
+
+  // 光标/选区在高亮内时提供灯泡操作
+  const codeActionProvider = vscode.languages.registerCodeActionsProvider(
+    { language: 'markdown' },
+    {
+      provideCodeActions(document, range) {
+        const startOffset = document.offsetAt(range.start);
+        const endOffset = document.offsetAt(range.end);
+        const span = collectHighlightSpans(document, document.getText())
+          .find((item) => startOffset >= item.start && endOffset <= item.end);
+        if (!span) {
+          return [];
+        }
+
+        const pickTitle = vscode.l10n.t("Change highlight color...");
+        const pickAction = new vscode.CodeAction(pickTitle, vscode.CodeActionKind.QuickFix);
+        pickAction.isPreferred = true;
+        pickAction.command = { command: 'markdown-highlight.pickColor', title: pickTitle };
+        const actions = [pickAction];
+
+        if (span.color) {
+          const defaultTitle = vscode.l10n.t("Use default color");
+          const defaultAction = new vscode.CodeAction(defaultTitle, vscode.CodeActionKind.QuickFix);
+          defaultAction.command = { command: 'markdown-highlight.setColorDefault', title: defaultTitle };
+          actions.push(defaultAction);
+        }
+
+        const removeTitle = vscode.l10n.t("Remove Highlight");
+        const removeAction = new vscode.CodeAction(removeTitle, vscode.CodeActionKind.QuickFix);
+        removeAction.command = { command: 'markdown-highlight.removeHighlight', title: removeTitle };
+        actions.push(removeAction);
+
+        return actions;
+      },
+    },
+    { providedCodeActionKinds: [vscode.CodeActionKind.QuickFix] }
+  );
+
   // 初始更新
   updateDecorations();
 
-  // 注册命令：用高亮标记包装选中的文本
-  const wrapCommand = vscode.commands.registerCommand('markdown-highlight.wrapWithHighlight', () => {
-    const editor = vscode.window.activeTextEditor;
-    if (!editor || editor.document.languageId !== "markdown") {
-      return;
-    }
-
-    // 遍历所有选中的范围
-    editor.edit((editBuilder) => {
-      for (const selection of editor.selections) {
-        // 检查选中范围是否在同一行
-        if (selection.start.line === selection.end.line && !selection.isEmpty) {
-          const selectedText = editor.document.getText(selection);
-          // 用 == 包装选中的文本
-          editBuilder.replace(selection, `==${selectedText}==`);
-        }
-      }
-    });
-  });
-
-  // 快捷键 Ctrl+Shift+= 触发
-  const textEditorCommand = vscode.commands.registerCommand('markdown-highlight.insertEqualsSign', () => {
-    const editor = vscode.window.activeTextEditor;
-    if (!editor || editor.document.languageId !== "markdown") {
-      return;
-    }
-
-    const selection = editor.selection;
-    
-    // 如果有选中文本且在同一行
-    if (!selection.isEmpty && selection.start.line === selection.end.line) {
-      const selectedText = editor.document.getText(selection);
-      
-      editor.edit((editBuilder) => {
-        // 替换选中的文本为 ==text==
-        editBuilder.replace(selection, `==${selectedText}==`);
-      });
-    } else {
-      // 没有选中，或者跨行，直接插入 ==
-      editor.edit((editBuilder) => {
-        editBuilder.insert(editor.selection.active, '==');
-      });
-    }
-  });
-
   // 监听文档变化和编辑器切换
   const disposables = [
-    wrapCommand,
-    textEditorCommand,
+    codeActionProvider,
+    ...Object.entries(colorCommands).map(([commandId, color]) =>
+      vscode.commands.registerCommand(commandId, () => applyHighlightColor(color))
+    ),
+    vscode.commands.registerCommand('markdown-highlight.pickColor', () => pickHighlightColor()),
+    vscode.commands.registerCommand('markdown-highlight.removeHighlight', () => removeHighlight()),
     vscode.window.onDidChangeActiveTextEditor((editor) => {
       if (editor) {
         // 支持 markdown 文件和 notebook 中的 markdown cells
