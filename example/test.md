@@ -13,5 +13,3 @@
 | Green  | `==🟢Done==`          | ==🟢Done==          |
 | Blue   | `==🔵Reference==`     | ==🔵Reference==     |
 | Purple | `==🟣Idea==`          | ==🟣Idea==          |
-
-> Without a color emoji, the highlight uses your theme's default highlight color.
