@@ -3,6 +3,8 @@
 node_modules/**
 src/**
 out/test/
+out/notebook.js
+out/notebook-renderer.js
 .gitignore
 .yarnrc
 vsc-extension-quickstart.md
