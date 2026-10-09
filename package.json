@@ -195,12 +195,6 @@
           "meta.embedded.block.markdown": "markdown"
         }
       }
-    ],
-    "snippets": [
-      {
-        "language": "markdown",
-        "path": "./snippets/highlight.json"
-      }
     ]
   },
   "scripts": {
