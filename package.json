@@ -2,7 +2,7 @@
   "name": "markdown-highlight-mark",
   "displayName": "markdown-highlight-mark",
   "description": "Highlight markdown ==...== text",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "publisher": "FDscend",
   "license": "MIT",
   "icon": "./icon.png",
