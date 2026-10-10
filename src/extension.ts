@@ -1,7 +1,8 @@
 import * as vscode from "vscode";
 import MarkdownIt from "markdown-it";
-import { highlightPlugin, defaultColor, defaultRadius, colorMarkers, colorEmoji, highlightColors, highlightPalette } from "./highlight-plugin";
-import { computeColorEdits, computeRemoveEdits, type ColorEdit, type HighlightSpan } from "./color-edits";
+import { highlightPlugin, defaultColor, defaultRadius, colorEmoji, highlightColors, highlightPalette } from "./highlight-plugin";
+import { computeColorEdits, computeRemoveEdits, type ColorEdit } from "./color-edits";
+import { collectHighlightSpans, getCodeBlockRanges, getInlineCodeRanges, isInRange } from "./markdown-scan";
 
 // 标记高亮文本装饰器
 const highlightDecorationType = vscode.window.createTextEditorDecorationType({
@@ -18,11 +19,6 @@ for (const [name, color] of Object.entries(highlightColors)) {
   });
 }
 
-// 改进的正则表达式，不匹配包含 | 的内容（避免表格错误匹配）
-// 并且不允许跨越换行符
-// 捕获组 1 为紧跟在 == 之后的颜色表情（可选），组 2 为高亮内容
-const HIGHLIGHT_REGEX = /==([🔴🟠🟡🟢🔵🟣]\uFE0F?)?([^=\n\r|]+)==/gu;
-
 // 颜色命令：菜单、命令面板共用；快捷键不设默认绑定，留待用户自行绑定
 const colorCommands: Record<string, string | null> = {
   'markdown-highlight.setColorDefault': null,
@@ -36,140 +32,6 @@ const colorCommands: Record<string, string | null> = {
 
 export function activate(context: vscode.ExtensionContext) {
   console.log("Markdown highlight extension is now active!");
-
-  // 获取markdown中代码块的范围
-  function getCodeBlockRanges(text: string, document: vscode.TextDocument): Array<{ start: number; end: number; language: string; type: string }> {
-    const ranges: Array<{ start: number; end: number; language: string; type: string }> = [];
-    const lines = text.split('\n');
-    let inFencedBlock = false;
-    let fenceStart = 0;
-    let blockLanguage = '';
-
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      const fenceMatch = line.match(/^```(\w*)/);
-
-      if (fenceMatch) {
-        if (inFencedBlock) {
-          // 代码块结束
-          const startOffset = document.offsetAt(new vscode.Position(fenceStart, 0));
-          const endOffset = document.offsetAt(new vscode.Position(i + 1, 0));
-          ranges.push({ start: startOffset, end: endOffset, language: blockLanguage, type: 'fence' });
-          inFencedBlock = false;
-        } else {
-          // 代码块开始
-          inFencedBlock = true;
-          fenceStart = i;
-          blockLanguage = fenceMatch[1];
-        }
-      } else if (line.match(/^    /) && !inFencedBlock) {
-        // 缩进代码块
-        const startOffset = document.offsetAt(new vscode.Position(i, 0));
-        const endOffset = document.offsetAt(new vscode.Position(i + 1, 0));
-        ranges.push({ start: startOffset, end: endOffset, language: '', type: 'indent' });
-      }
-    }
-
-    return ranges;
-  }
-
-  // 获取行内代码（backticks）的范围，排除代码块内的 backticks
-  function getInlineCodeRanges(text: string, document: vscode.TextDocument, codeBlockRanges: Array<{ start: number; end: number; language: string; type: string }>): Array<{ start: number; end: number }> {
-    const ranges: Array<{ start: number; end: number }> = [];
-    const inlineCodeRegex = /`[^`]*`/g;
-    let match;
-    
-    while ((match = inlineCodeRegex.exec(text))) {
-      const matchStart = match.index;
-      const matchEnd = match.index + match[0].length;
-      
-      // 检查该行间代码是否与任何代码块重叠
-      // 如果与代码块有重叠，则跳过（因为在代码块内）
-      let inCodeBlock = false;
-      for (const codeRange of codeBlockRanges) {
-        // 范围重叠检查：不是 (b在a的右边 OR a在b的右边)
-        if (!(matchEnd <= codeRange.start || matchStart >= codeRange.end)) {
-          inCodeBlock = true;
-          break;
-        }
-      }
-      
-      if (!inCodeBlock) {
-        ranges.push({ start: matchStart, end: matchEnd });
-      }
-    }
-    return ranges;
-  }
-
-  // 检查位置是否在行内代码中
-  function isInInlineCode(offset: number, inlineCodeRanges: Array<{ start: number; end: number }>): boolean {
-    for (const range of inlineCodeRanges) {
-      if (offset >= range.start && offset < range.end) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  // 检查位置是否在代码块中
-  function isInCodeBlock(offset: number, codeBlockRanges: Array<{ start: number; end: number; language: string; type: string }>): { inCodeBlock: boolean; language: string; type: string } {
-    for (const range of codeBlockRanges) {
-      if (offset >= range.start && offset < range.end) {
-        return { inCodeBlock: true, language: range.language, type: range.type };
-      }
-    }
-    return { inCodeBlock: false, language: '', type: '' };
-  }
-
-  // 收集文档中所有 ==...== 区间（与预览插件同一套规则，忽略代码块与行内代码）
-  function collectHighlightSpans(document: vscode.TextDocument, text: string): HighlightSpan[] {
-    const codeBlockRanges = getCodeBlockRanges(text, document);
-    const inlineCodeRanges = getInlineCodeRanges(text, document, codeBlockRanges);
-    const spans: HighlightSpan[] = [];
-
-    // 重置全局正则的 lastIndex，避免状态污染
-    HIGHLIGHT_REGEX.lastIndex = 0;
-
-    let match;
-    while ((match = HIGHLIGHT_REGEX.exec(text))) {
-      const start = match.index;
-      const end = start + match[0].length;
-
-      // 检查是否在行内代码中
-      if (isInInlineCode(start, inlineCodeRanges) || isInInlineCode(end - 1, inlineCodeRanges)) {
-        continue;
-      }
-
-      // 检查匹配的开始和结束位置是否都不在代码块中
-      const startBlockInfo = isInCodeBlock(start, codeBlockRanges);
-      const endBlockInfo = isInCodeBlock(end - 1, codeBlockRanges);
-
-      // 只有当两个标记都不在代码块中时，才高亮
-      // 或者都在 markdown 代码块中时，才高亮
-      let shouldHighlight = !startBlockInfo.inCodeBlock && !endBlockInfo.inCodeBlock;
-      if (startBlockInfo.inCodeBlock && endBlockInfo.inCodeBlock &&
-          startBlockInfo.type === endBlockInfo.type &&
-          startBlockInfo.language === endBlockInfo.language) {
-        shouldHighlight = startBlockInfo.type === 'fence' && startBlockInfo.language === 'markdown';
-      }
-      if (!shouldHighlight) {
-        continue;
-      }
-
-      // 捕获组 1 是颜色表情（可能带变体选择符），只有紧跟 == 时才作为颜色标记
-      const marker = match[1];
-      const emoji = marker ? [...marker][0] : undefined;
-      spans.push({
-        start,
-        end,
-        contentStart: start + 2 + (marker?.length ?? 0),
-        contentEnd: end - 2,
-        color: emoji ? colorMarkers[emoji] ?? null : null,
-      });
-    }
-
-    return spans;
-  }
 
   // 更新编辑器高亮
   function updateDecorations() {
@@ -193,7 +55,7 @@ export function activate(context: vscode.ExtensionContext) {
       coloredHighlights[name] = [];
     }
 
-    for (const span of collectHighlightSpans(editor.document, editor.document.getText())) {
+    for (const span of collectHighlightSpans(editor.document.getText())) {
       const decoration = {
         range: new vscode.Range(editor.document.positionAt(span.start), editor.document.positionAt(span.end)),
       };
@@ -266,7 +128,7 @@ export function activate(context: vscode.ExtensionContext) {
     const adapter = getEditorAdapter(editor.document);
     const edits = computeColorEdits(
       adapter,
-      collectHighlightSpans(editor.document, adapter.text),
+      collectHighlightSpans(adapter.text),
       getSelectionOffsets(editor),
       colorEmoji(colorName)
     );
@@ -283,7 +145,7 @@ export function activate(context: vscode.ExtensionContext) {
     const adapter = getEditorAdapter(editor.document);
     const edits = computeRemoveEdits(
       adapter,
-      collectHighlightSpans(editor.document, adapter.text),
+      collectHighlightSpans(adapter.text),
       getSelectionOffsets(editor)
     );
     await applyEdits(editor, edits);
@@ -312,9 +174,9 @@ export function activate(context: vscode.ExtensionContext) {
       provideCompletionItems(document, position, _token, context) {
         const text = document.getText();
         const offset = document.offsetAt(position);
-        const codeBlockRanges = getCodeBlockRanges(text, document);
-        if (isInCodeBlock(offset, codeBlockRanges).inCodeBlock ||
-            isInInlineCode(offset, getInlineCodeRanges(text, document, codeBlockRanges))) {
+        const codeBlockRanges = getCodeBlockRanges(text);
+        if (isInRange(offset, codeBlockRanges) ||
+            isInRange(offset, getInlineCodeRanges(text, codeBlockRanges))) {
           return [];
         }
 
@@ -335,7 +197,7 @@ export function activate(context: vscode.ExtensionContext) {
         const typedLength = context.triggerKind === vscode.CompletionTriggerKind.Invoke ? 0 : Math.min(2, trailingEquals);
         const baseText = typedLength > 0 ? text.slice(0, offset - typedLength) + text.slice(offset) : text;
         // 右端取开区间：光标正好在某个高亮之后时，应视为在该高亮之外（插入新标记而非改上一个的颜色）
-        const baseSpan = collectHighlightSpans(document, baseText).find(
+        const baseSpan = collectHighlightSpans(baseText).find(
           (item) => offset - typedLength >= item.start && offset - typedLength < item.end
         );
 
@@ -397,7 +259,7 @@ export function activate(context: vscode.ExtensionContext) {
     }
 
     const cursor = editor.document.offsetAt(editor.selection.active);
-    const current = collectHighlightSpans(editor.document, editor.document.getText())
+    const current = collectHighlightSpans(editor.document.getText())
       .find((span) => cursor >= span.start && cursor <= span.end);
 
     const items: Array<vscode.QuickPickItem & { colorName: string | null }> = highlightChoices().map((choice) => ({
@@ -422,7 +284,7 @@ export function activate(context: vscode.ExtensionContext) {
       provideCodeActions(document, range) {
         const startOffset = document.offsetAt(range.start);
         const endOffset = document.offsetAt(range.end);
-        const span = collectHighlightSpans(document, document.getText())
+        const span = collectHighlightSpans(document.getText())
           .find((item) => startOffset >= item.start && endOffset <= item.end);
         if (!span) {
           return [];

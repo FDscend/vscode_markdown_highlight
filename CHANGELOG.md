@@ -20,3 +20,5 @@
 - Rebind `Ctrl + Shift + =` to highlighting with the default color; applying it to text inside an existing highlight changes that highlight instead of nesting a new one.
 - Remove the `highlight` snippet, now superseded by the color autocomplete.
 - Style hand-written `<mark data-highlight="...">` markup via CSS as a fallback.
+- Fix wrong highlight positions in the editor when an earlier part of the file contains an unmatched backtick (for example a lone backtick in a table cell): inline code is now paired per line by backtick runs of equal length, so `==...==` inside inline code is no longer highlighted and the real highlight next to it is no longer skipped.
+- Recognize fenced code blocks nested in callouts/quotes and fences of four or more backticks, so `==...==` inside them is no longer highlighted; an unclosed fence now extends to the end of the file.
