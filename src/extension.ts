@@ -167,11 +167,16 @@ export function activate(context: vscode.ExtensionContext) {
     ];
   }
 
-  // 补全：键入 == 时列出颜色，选中即插入带色高亮；手动触发（Ctrl+Space）时可为光标所在高亮改色
   const completionProvider = vscode.languages.registerCompletionItemProvider(
     { language: 'markdown' },
     {
-      provideCompletionItems(document, position, _token, context) {
+      provideCompletionItems(document, position) {
+        // Invoke 也用于自动建议，不能用它区分 Ctrl+Space 与普通输入。
+        const linePrefix = document.lineAt(position.line).text.slice(0, position.character);
+        if (!linePrefix.endsWith('==')) {
+          return [];
+        }
+
         const text = document.getText();
         const offset = document.offsetAt(position);
         const codeBlockRanges = getCodeBlockRanges(text);
@@ -181,32 +186,28 @@ export function activate(context: vscode.ExtensionContext) {
         }
 
         const choices = highlightChoices();
-        // filterPrefix 必须包含 item.range 覆盖的已输入文本，否则该项会被 VS Code 的过滤前缀规则丢弃
+        // 缓存候选只匹配已输入文本，避免继续匹配颜色标签中的空格。
         const itemFor = (choice: { name: string | null; label: string; emoji: string }, index: number, sortText: string, filterPrefix: string) => {
           const label = choice.emoji ? `${choice.emoji} ${choice.label}` : choice.label;
           const item = new vscode.CompletionItem(label, vscode.CompletionItemKind.Color);
           item.sortText = sortText;
-          item.filterText = `${filterPrefix}${label}`;
+          item.filterText = filterPrefix;
           return item;
         };
 
-        // 触发字符路径下，光标前的连续 = 是刚键入的；据此还原"键入之前"的文本，
-        // 才能判断光标本来就在某个高亮内（此时应改色而不是再插入一段高亮）
-        const linePrefix = document.lineAt(position.line).text.slice(0, position.character);
-        const trailingEquals = /(=*)$/.exec(linePrefix)?.[1].length ?? 0;
-        const typedLength = context.triggerKind === vscode.CompletionTriggerKind.Invoke ? 0 : Math.min(2, trailingEquals);
-        const baseText = typedLength > 0 ? text.slice(0, offset - typedLength) + text.slice(offset) : text;
+        // 去掉触发标记后再判断原有高亮，避免在高亮内嵌套插入。
+        const typedLength = 2;
+        const baseText = text.slice(0, offset - typedLength) + text.slice(offset);
         // 右端取开区间：光标正好在某个高亮之后时，应视为在该高亮之外（插入新标记而非改上一个的颜色）
         const baseSpan = collectHighlightSpans(baseText).find(
           (item) => offset - typedLength >= item.start && offset - typedLength < item.end
         );
 
-        // 1) 光标本就在某个高亮内（含刚在该高亮内键入 =）：改成对应颜色，刚键入的 = 一并替换掉
         if (baseSpan) {
           const range = new vscode.Range(document.positionAt(baseSpan.start), document.positionAt(baseSpan.end + typedLength));
           const content = baseText.slice(baseSpan.contentStart, baseSpan.contentEnd);
           return choices.map((choice, index) => {
-            const item = itemFor(choice, index, String(index).padStart(2, '0'), document.getText(range));
+            const item = itemFor(choice, index, String(index).padStart(2, '0'), text.slice(baseSpan.start, offset));
             item.textEdit = vscode.TextEdit.replace(range, `==${colorEmoji(choice.name)}${content}==`);
             if (baseSpan.color === choice.name) {
               item.detail = vscode.l10n.t("Current");
@@ -215,31 +216,10 @@ export function activate(context: vscode.ExtensionContext) {
           });
         }
 
-        // 2) 刚键入 == 且不在高亮内：插入一对带色标记，光标停在内容处
-        if (typedLength === 2) {
-          const range = new vscode.Range(position.translate(0, -2), position);
-          return choices.map((choice, index) => {
-            const marker = colorEmoji(choice.name);
-            const item = itemFor(choice, index, String(index).padStart(2, '0'), document.getText(range));
-            item.kind = vscode.CompletionItemKind.Snippet;
-            item.range = range;
-            item.insertText = new vscode.SnippetString(`==${marker}$1==`);
-            item.detail = `==${marker}…==`;
-            return item;
-          });
-        }
-
-        // 3) 手动触发（Ctrl+Space）、单个光标、不在高亮内：在光标处插入，排在其它补全项之后
-        const editor = vscode.window.activeTextEditor;
-        if (context.triggerKind !== vscode.CompletionTriggerKind.Invoke ||
-            !editor || editor.document !== document || editor.selections.length !== 1) {
-          return [];
-        }
-
-        const range = new vscode.Range(position, position);
+        const range = new vscode.Range(position.translate(0, -typedLength), position);
         return choices.map((choice, index) => {
           const marker = colorEmoji(choice.name);
-          const item = itemFor(choice, index, `zz${String(index).padStart(2, '0')}`, '');
+          const item = itemFor(choice, index, String(index).padStart(2, '0'), document.getText(range));
           item.kind = vscode.CompletionItemKind.Snippet;
           item.range = range;
           item.insertText = new vscode.SnippetString(`==${marker}$1==`);

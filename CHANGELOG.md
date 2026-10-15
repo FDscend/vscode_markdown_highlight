@@ -22,3 +22,8 @@
 - Style hand-written `<mark data-highlight="...">` markup via CSS as a fallback.
 - Fix wrong highlight positions in the editor when an earlier part of the file contains an unmatched backtick (for example a lone backtick in a table cell): inline code is now paired per line by backtick runs of equal length, so `==...==` inside inline code is no longer highlighted and the real highlight next to it is no longer skipped.
 - Recognize fenced code blocks nested in callouts/quotes and fences of four or more backticks, so `==...==` inside them is no longer highlighted; an unclosed fence now extends to the end of the file.
+
+## [0.0.4] - 2026-10-15
+
+- Fix highlight autocomplete appearing during ordinary typing and interfering with built-in word and snippet suggestions: highlight suggestions now appear only when the cursor is immediately after `==`.
+- Dismiss highlight autocomplete when a space is typed after `==`, instead of keeping cached suggestions visible.

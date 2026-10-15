@@ -2,7 +2,7 @@
   "name": "markdown-highlight-mark",
   "displayName": "markdown-highlight-mark",
   "description": "Highlight markdown ==...== text",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "publisher": "FDscend",
   "license": "MIT",
   "icon": "./icon.png",
@@ -201,7 +201,8 @@
     "vscode:prepublish": "npm run compile",
     "compile": "tsc -p ./ && tsup --config tsup.notebook.config.ts",
     "watch": "tsup --config tsup.notebook.config.ts && tsc -watch -p ./",
-    "lint": "eslint src"
+    "lint": "eslint src",
+    "test": "tsc -p ./ && node --test test/*.test.cjs"
   },
   "devDependencies": {
     "@types/markdown-it": "^14.1.2",
