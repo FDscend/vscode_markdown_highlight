@@ -27,3 +27,8 @@
 
 - Fix highlight autocomplete appearing during ordinary typing and interfering with built-in word and snippet suggestions: highlight suggestions now appear only when the cursor is immediately after `==`.
 - Dismiss highlight autocomplete when a space is typed after `==`, instead of keeping cached suggestions visible.
+
+## [0.0.5] - 2026-10-15
+
+- Restore color autocomplete when a single `=` is typed inside an existing highlight. Selecting a color removes the trigger character and recolors the existing highlight without nesting it; single `=` characters outside highlights still do not trigger highlight suggestions.
+- Fix editor highlighting disappearing when highlighted text contains a single `=`, keeping editor decorations and syntax highlighting consistent with the preview for this case.

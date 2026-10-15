@@ -173,7 +173,7 @@ export function activate(context: vscode.ExtensionContext) {
       provideCompletionItems(document, position) {
         // Invoke 也用于自动建议，不能用它区分 Ctrl+Space 与普通输入。
         const linePrefix = document.lineAt(position.line).text.slice(0, position.character);
-        if (!linePrefix.endsWith('==')) {
+        if (!linePrefix.endsWith('=')) {
           return [];
         }
 
@@ -196,14 +196,16 @@ export function activate(context: vscode.ExtensionContext) {
         };
 
         // 去掉触发标记后再判断原有高亮，避免在高亮内嵌套插入。
-        const typedLength = 2;
-        const baseText = text.slice(0, offset - typedLength) + text.slice(offset);
-        // 右端取开区间：光标正好在某个高亮之后时，应视为在该高亮之外（插入新标记而非改上一个的颜色）
-        const baseSpan = collectHighlightSpans(baseText).find(
-          (item) => offset - typedLength >= item.start && offset - typedLength < item.end
-        );
+        for (const typedLength of linePrefix.endsWith('==') ? [2, 1] : [1]) {
+          const triggerOffset = offset - typedLength;
+          const baseText = text.slice(0, triggerOffset) + text.slice(offset);
+          const baseSpan = collectHighlightSpans(baseText).find((item) => typedLength === 1
+            ? triggerOffset >= item.contentStart && triggerOffset <= item.contentEnd
+            : triggerOffset >= item.start && triggerOffset < item.end);
+          if (!baseSpan) {
+            continue;
+          }
 
-        if (baseSpan) {
           const range = new vscode.Range(document.positionAt(baseSpan.start), document.positionAt(baseSpan.end + typedLength));
           const content = baseText.slice(baseSpan.contentStart, baseSpan.contentEnd);
           return choices.map((choice, index) => {
@@ -216,6 +218,11 @@ export function activate(context: vscode.ExtensionContext) {
           });
         }
 
+        if (!linePrefix.endsWith('==')) {
+          return [];
+        }
+
+        const typedLength = 2;
         const range = new vscode.Range(position.translate(0, -typedLength), position);
         return choices.map((choice, index) => {
           const marker = colorEmoji(choice.name);

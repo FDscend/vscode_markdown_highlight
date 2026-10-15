@@ -17,7 +17,7 @@ export interface CodeBlockRange extends Range {
 }
 
 /** ==…== 不跨行、内容不含 |（避免表格单元格误匹配）；组 1 为紧邻起始 == 的颜色表情 */
-const HIGHLIGHT_REGEX = /==([🔴🟠🟡🟢🔵🟣]\uFE0F?)?([^=\n\r|]+)==/gu;
+const HIGHLIGHT_REGEX = /==([🔴🟠🟡🟢🔵🟣]\uFE0F?)?((?:(?!==)[^\n\r|])+)==/gu;
 
 /**
  * 围栏代码块行：允许最多 3 个空格缩进与任意层 `>` 引用前缀（callout 内的代码块）。

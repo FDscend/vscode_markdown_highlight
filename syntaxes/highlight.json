@@ -4,7 +4,7 @@
   "patterns": [
     {
       "name": "markup.highlight.markdown",
-      "match": "==([^=]+)==",
+      "match": "==((?:(?!==)[^\\r\\n])+)==",
       "captures": {
         "0": {
           "name": "markup.highlight.markdown"
